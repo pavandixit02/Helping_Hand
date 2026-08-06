@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Helping Hand — AI-Powered Digital Healthcare & Caregiving Ecosystem">
+    <title>{% block title %}Helping Hand{% endblock %}</title>
+
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="{% load static %}{% static 'css/main.css' %}">
+
+    <!-- HTMX -->
+    <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+
+    <!-- Navigation -->
+    {% include "components/navbar.html" %}
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}" role="alert">
+            {{ message }}
+            <button class="alert-close" onclick="this.parentElement.remove()">×</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    {% include "components/footer.html" %}
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

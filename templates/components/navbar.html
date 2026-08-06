@@ -1,0 +1,33 @@
+{% load static %}
+
+<nav class="navbar">
+    <div class="navbar-brand">
+        <a href="{% url 'dashboard:home' %}">
+            <span class="logo">🏥</span>
+            <span class="brand-text">Helping Hand</span>
+        </a>
+    </div>
+
+    <div class="navbar-menu">
+        {% if user.is_authenticated %}
+            <a href="{% url 'dashboard:index' %}" class="nav-link">Dashboard</a>
+            <a href="{% url 'appointments:appointment-list' %}" class="nav-link">Appointments</a>
+            <a href="{% url 'communication:notification-list' %}" class="nav-link">
+                Notifications
+                <span id="notification-badge"
+                      hx-get="{% url 'communication:notification-list' %}"
+                      hx-trigger="every 30s"
+                      hx-target="#notification-badge"
+                      hx-swap="innerHTML">
+                </span>
+            </a>
+            <div class="nav-user">
+                <span>{{ user.email }}</span>
+                <a href="{% url 'account_logout' %}" class="nav-link">Logout</a>
+            </div>
+        {% else %}
+            <a href="{% url 'account_login' %}" class="nav-link">Login</a>
+            <a href="{% url 'account_signup' %}" class="nav-link btn-primary">Sign Up</a>
+        {% endif %}
+    </div>
+</nav>

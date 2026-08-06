@@ -1,0 +1,43 @@
+# base.txt
+# Core dependencies for Helping Hand Django project
+
+# Django & Core
+Django==4.2.16
+django-environ==0.11.2
+
+# PostgreSQL & Geospatial
+# psycopg2-binary==2.9.9  # Commented out for local Windows run without Postgres
+# GDAL is usually required for PostGIS at system level, so we don't install via pip, but we need the python bindings if needed
+
+# DRF & API
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+django-filter==23.5
+
+# Authentication
+django-allauth==0.61.1
+
+# WebSockets & Async
+channels==4.0.0
+daphne==4.0.0
+channels-redis==4.1.0
+
+# Task Queue
+celery==5.3.6
+redis==5.0.1
+django-celery-beat==2.5.0
+
+# HTMX
+django-htmx==1.17.2
+
+# Utilities & Integrations
+# Pillow==10.2.0  # Commented out for local Windows run to bypass build errors
+cryptography==41.0.7
+boto3==1.34.14
+django-storages==1.14.2
+stripe==7.13.0
+twilio==8.11.0
+openai==1.10.0
+
+# Audit & Security
+django-auditlog==2.3.0

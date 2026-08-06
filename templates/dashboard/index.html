@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — Helping Hand{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1>Welcome, {{ user.email }}</h1>
+    <p>Role: <strong>{{ user_role }}</strong></p>
+
+    <div class="dashboard-grid">
+        <div class="card"
+             hx-get="{% url 'appointments:appointment-list' %}"
+             hx-trigger="load"
+             hx-target="#recent-appointments"
+             hx-swap="innerHTML">
+            <h3>📅 Recent Appointments</h3>
+            <div id="recent-appointments">Loading...</div>
+        </div>
+
+        <div class="card">
+            <h3>🔔 Notifications</h3>
+            <div id="dashboard-notifications"
+                 hx-get="{% url 'communication:notification-list' %}"
+                 hx-trigger="load"
+                 hx-target="#dashboard-notifications"
+                 hx-swap="innerHTML">
+                Loading...
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>💰 Wallet</h3>
+            <div id="wallet-balance"
+                 hx-get="{% url 'billing:wallet' %}"
+                 hx-trigger="load"
+                 hx-target="#wallet-balance"
+                 hx-swap="innerHTML">
+                Loading...
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>💬 Messages</h3>
+            <div id="recent-messages"
+                 hx-get="{% url 'communication:conversation-list' %}"
+                 hx-trigger="load"
+                 hx-target="#recent-messages"
+                 hx-swap="innerHTML">
+                Loading...
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

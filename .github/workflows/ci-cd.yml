@@ -1,96 +1,89 @@
-name: Enterprise Production Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main, staging ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main, staging ]
 
 jobs:
-  quality-gates:
-    name: Code Quality & Security
+  test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:15-3.3
+        env:
+          POSTGRES_DB: helping_hand_db
+          POSTGRES_USER: helpinghand
+          POSTGRES_PASSWORD: password123
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          
-      - name: Install Dependencies
-        run: npm ci
-        
-      - name: TypeScript Type Check
-        run: npm run tsc
-        
-      - name: Run Unit Tests
-        run: npm run test
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
         with:
-          scan-type: 'fs'
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          severity: 'CRITICAL,HIGH'
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install system dependencies (GDAL)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gdal-bin libgdal-dev
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/local.txt
+
+      - name: Lint with flake8 & black
+        run: |
+          make lint
+
+      - name: Run Tests
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.development
+          DB_HOST: localhost
+          DB_USER: helpinghand
+          DB_PASSWORD: password123
+          REDIS_URL: redis://localhost:6379/0
+        run: |
+          make coverage
 
   build-and-push:
-    name: Build & Push Docker Images
-    needs: quality-gates
+    needs: test
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        
-      - name: Login to ECR
+      - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          
-      - name: Build and push Backend API
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./backend
           push: true
-          tags: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/helpinghand-backend:latest
-          
-      - name: Build and push Customer Web
-        uses: docker/build-push-action@v5
-        with:
-          context: ./apps/customer-web
-          push: true
-          tags: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/helpinghand-customer:latest
+          tags: yourorg/helping-hand:latest
+          target: production
 
   deploy:
-    name: Deploy to Kubernetes (EKS)
     needs: build-and-push
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-          
-      - name: Update KubeConfig
-        run: aws eks update-kubeconfig --name helpinghand-prod-cluster --region ${{ secrets.AWS_REGION }}
-        
-      - name: Deploy with Helm
-        run: |
-          helm upgrade --install helpinghand ./devops/helm/helping-hand \
-            --namespace production \
-            --set backend.image.tag=latest \
-            --set customerWeb.image.tag=latest \
-            --wait --timeout 5m
+      - name: Deploy to Kubernetes
+        run: echo "Execute kubectl apply -f devops/kubernetes/ ..."

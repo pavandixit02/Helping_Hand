@@ -1,0 +1,10 @@
+# production.txt
+# Production-specific dependencies
+
+-r base.txt
+
+# WSGI Server
+gunicorn==21.2.0
+
+# Error Tracking & APM
+sentry-sdk==1.39.1
